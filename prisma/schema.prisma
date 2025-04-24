@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("postgresql://postgres:uMmwTmBJiozpZOwYMJWPaJYKxBmuGpTe@hopper.proxy.rlwy.net:59711/railway")
+  url      = env("DATABASE_URL")
 }
 
 // Modelo para usuarios (arrendatarios y arrendadores)
