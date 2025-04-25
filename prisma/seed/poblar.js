@@ -221,68 +221,13 @@ async function crearDisponibilidad(autos) {
 }
 
 async function crearReservas(autos, usuarios) {
-  const estadosReserva = [
-    EstadoReserva.SOLICITADA,
-    EstadoReserva.APROBADA,
-    EstadoReserva.CONFIRMADA,
-    EstadoReserva.EN_CURSO,
-    EstadoReserva.FINALIZADA
-  ];
-  
   const hoy = new Date();
   const reservas = [];
-{/* Creamos algunas reservas pasadas (finalizadas) 
-  // Creamos algunas reservas pasadas (finalizadas)
-  for (let i = 0; i < 5; i++) {
+  
+  // Creamos 20 reservas en estado SOLICITADA
+  for (let i = 0; i < 20; i++) {
     const autoIndex = Math.floor(Math.random() * autos.length);
-    // Saltamos al usuario admin (posición 0) y elegimos un cliente
-    const clienteIndex = Math.floor(Math.random() * (usuarios.length - 1)) + 1;
-    
-    // Reserva finalizada (en el pasado)
-    const diasEnPasado = Math.floor(Math.random() * 30) + 15; // Entre 15 y 45 días atrás
-    const fechaInicio = new Date(hoy);
-    fechaInicio.setDate(hoy.getDate() - diasEnPasado);
-    
-    const duracion = Math.floor(Math.random() * 5) + 1; // Entre 1 y 5 días
-    const fechaFin = new Date(fechaInicio);
-    fechaFin.setDate(fechaInicio.getDate() + duracion);
-
-    // Fecha de solicitud antes de fecha inicio
-    const fechaSolicitud = new Date(fechaInicio);
-    fechaSolicitud.setDate(fechaInicio.getDate() - 7); // 7 días antes
-
-    // Fecha límite de pago
-    const fechaLimitePago = new Date(fechaSolicitud);
-    fechaLimitePago.setDate(fechaSolicitud.getDate() + 2); // 2 días después de solicitud
-    
-    const precioRentaDiario = autos[autoIndex].precioRentaDiario;
-    const montoTotal = precioRentaDiario * duracion;
-    
-    const reserva = await prisma.reserva.create({
-      data: {
-        idAuto: autos[autoIndex].idAuto,
-        idCliente: usuarios[clienteIndex].idUsuario,
-        fechaInicio: fechaInicio,
-        fechaFin: fechaFin,
-        estado: EstadoReserva.FINALIZADA,
-        fechaSolicitud: fechaSolicitud,
-        fechaAprobacion: fechaSolicitud, // Aprobada el mismo día para simplificar
-        fechaLimitePago: fechaLimitePago,
-        montoTotal: montoTotal,
-        kilometrajeInicial: autos[autoIndex].kilometraje,
-        kilometrajeFinal: autos[autoIndex].kilometraje + Math.floor(Math.random() * 500),
-        estaPagada: true
-      }
-    });
-    
-    reservas.push(reserva);
-  }
-*/}
-  // Creamos algunas reservas en curso o futuras
-  for (let i = 0; i < 5; i++) {
-    const autoIndex = Math.floor(Math.random() * autos.length);
-    const clienteIndex = Math.floor(Math.random() * (usuarios.length - 1)) + 1;
-    const estadoReserva = estadosReserva[Math.floor(Math.random() * 3)]; // Solo los primeros 3 estados
+    const clienteIndex = Math.floor(Math.random() * (usuarios.length - 1)) + 1; // +1 para saltar al admin
     
     // Fechas futuras para reservas no finalizadas
     const diasEnFuturo = Math.floor(Math.random() * 30) + 1; // Entre 1 y 30 días en futuro
@@ -303,7 +248,6 @@ async function crearReservas(autos, usuarios) {
     
     const precioRentaDiario = autos[autoIndex].precioRentaDiario;
     const montoTotal = precioRentaDiario * duracion;
-    const estaPagada = estadoReserva === EstadoReserva.CONFIRMADA || Math.random() > 0.5;
     
     const reserva = await prisma.reserva.create({
       data: {
@@ -311,21 +255,28 @@ async function crearReservas(autos, usuarios) {
         idCliente: usuarios[clienteIndex].idUsuario,
         fechaInicio: fechaInicio,
         fechaFin: fechaFin,
-        estado: estadoReserva,
+        estado: EstadoReserva.SOLICITADA,
         fechaSolicitud: fechaSolicitud,
-        fechaAprobacion: estadoReserva !== EstadoReserva.SOLICITADA ? fechaSolicitud : null,
+        fechaAprobacion: null, // Sin fecha de aprobación para estado SOLICITADA
         fechaLimitePago: fechaLimitePago,
         montoTotal: montoTotal,
         kilometrajeInicial: null, // Aún no inicia
         kilometrajeFinal: null,   // Aún no finaliza
-        estaPagada: estaPagada
+        estaPagada: false
       }
     });
     
     reservas.push(reserva);
   }
 
-  console.log(`Creadas ${reservas.length} reservas`);
+  console.log(`Creadas ${reservas.length} reservas solicitadas`);
+  {/**
+  // Imprimir IDs de reservas solicitadas
+  console.log('IDs de reservas solicitadas:');
+  reservas.forEach(r => console.log(`ID: ${r.idReserva}, Auto: ${r.idAuto}, Cliente: ${r.idCliente}`));
+  
+  */}
+  
   return reservas;
 }
 
