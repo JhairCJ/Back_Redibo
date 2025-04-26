@@ -1,3 +1,4 @@
+
 import { PrismaClient, Transmision, Combustible, EstadoAuto, TipoMantenimiento, MotivoNoDisponibilidad, EstadoReserva, EstadoGarantia, MetodoPago, TipoPago } from '@prisma/client';
 import { hash } from 'bcrypt';
 
@@ -59,61 +60,86 @@ async function limpiarBaseDeDatos() {
 async function crearUsuarios() {
   const passwordHash = await hash('123456', 10);
   
-  const usuarios = await Promise.all([
-    prisma.usuario.create({
+  // Creamos primero al admin (ID 1)
+  const admin = await prisma.usuario.create({
+    data: {
+      nombre: 'Admin',
+      apellido: 'Sistema',
+      email: 'admin@rentacar.com',
+      telefono: '591-77777777',
+      direccion: 'Calle Principal #123',
+      contraseña: passwordHash,
+      esAdmin: true
+    },
+  });
+  
+  // Luego creamos rentadores (propietarios) con IDs 2-11
+  const rentadores = [];
+  const nombresRentadores = [
+    { nombre: 'Juan', apellido: 'Pérez' },
+    { nombre: 'María', apellido: 'González' },
+    { nombre: 'Carlos', apellido: 'Rodríguez' },
+    { nombre: 'Ana', apellido: 'López' },
+    { nombre: 'Luis', apellido: 'Martínez' },
+    { nombre: 'Laura', apellido: 'Sánchez' },
+    { nombre: 'Roberto', apellido: 'Torres' },
+    { nombre: 'Patricia', apellido: 'Fernández' },
+    { nombre: 'Miguel', apellido: 'García' },
+    { nombre: 'Sofía', apellido: 'Ramírez' }
+  ];
+  
+  for (let i = 0; i < nombresRentadores.length; i++) {
+    const rentador = await prisma.usuario.create({
       data: {
-        nombre: 'Admin',
-        apellido: 'Sistema',
-        email: 'admin@rentacar.com',
-        telefono: '591-77777777',
-        direccion: 'Calle Principal #123',
-        contraseña: passwordHash,
-        esAdmin: true
-      },
-    }),
-    prisma.usuario.create({
-      data: {
-        nombre: 'Juan',
-        apellido: 'Pérez',
-        email: 'juan@example.com',
-        telefono: '591-76543210',
-        direccion: 'Av. Las Américas #456',
+        nombre: nombresRentadores[i].nombre,
+        apellido: nombresRentadores[i].apellido,
+        email: `${nombresRentadores[i].nombre.toLowerCase()}@rentacar.com`,
+        telefono: `591-7${i}543210`,
+        direccion: `Av. Los Propietarios #${i+100}`,
         contraseña: passwordHash
       },
-    }),
-    prisma.usuario.create({
+    });
+    rentadores.push(rentador);
+  }
+  
+  // Finalmente creamos clientes (no propietarios) con IDs 12+
+  const clientes = [];
+  const nombresClientes = [
+    { nombre: 'Fernando', apellido: 'Gómez' },
+    { nombre: 'Valentina', apellido: 'Díaz' },
+    { nombre: 'Javier', apellido: 'Morales' },
+    { nombre: 'Carolina', apellido: 'Vargas' },
+    { nombre: 'Gustavo', apellido: 'Castro' },
+    { nombre: 'Daniela', apellido: 'Ortega' },
+    { nombre: 'Eduardo', apellido: 'Mendoza' },
+    { nombre: 'Gabriela', apellido: 'Flores' },
+    { nombre: 'Héctor', apellido: 'Herrera' },
+    { nombre: 'Alejandra', apellido: 'Paredes' },
+    { nombre: 'Ricardo', apellido: 'Rojas' },
+    { nombre: 'Natalia', apellido: 'Medina' },
+    { nombre: 'César', apellido: 'Navarro' },
+    { nombre: 'Valeria', apellido: 'Quintana' },
+    { nombre: 'Andrés', apellido: 'Cárdenas' }
+  ];
+  
+  for (let i = 0; i < nombresClientes.length; i++) {
+    const cliente = await prisma.usuario.create({
       data: {
-        nombre: 'María',
-        apellido: 'González',
-        email: 'maria@example.com',
-        telefono: '591-76123456',
-        direccion: 'Calle Los Pinos #789',
+        nombre: nombresClientes[i].nombre,
+        apellido: nombresClientes[i].apellido,
+        email: `${nombresClientes[i].nombre.toLowerCase()}${Math.floor(Math.random() * 100)}@example.com`,
+        telefono: `591-6${i}123456`,
+        direccion: `Calle Los Clientes #${i+200}`,
         contraseña: passwordHash
       },
-    }),
-    prisma.usuario.create({
-      data: {
-        nombre: 'Carlos',
-        apellido: 'Rodríguez',
-        email: 'carlos@example.com',
-        telefono: '591-70123456',
-        direccion: 'Av. Siempre Viva #123',
-        contraseña: passwordHash
-      },
-    }),
-    prisma.usuario.create({
-      data: {
-        nombre: 'Ana',
-        apellido: 'López',
-        email: 'ana@example.com',
-        telefono: '591-71234567',
-        direccion: 'Calle Las Flores #321',
-        contraseña: passwordHash
-      },
-    }),
-  ]);
-
-  console.log(`Creados ${usuarios.length} usuarios`);
+    });
+    clientes.push(cliente);
+  }
+  
+  // Concatenamos todos los usuarios
+  const usuarios = [admin, ...rentadores, ...clientes];
+  
+  console.log(`Creados ${usuarios.length} usuarios (1 admin, ${rentadores.length} rentadores, ${clientes.length} clientes)`);
   return usuarios;
 }
 
@@ -127,29 +153,54 @@ async function crearAutos(usuarios) {
     { marca: 'Volkswagen', modelo: 'Golf', tipo: 'Hatchback', precio: 30.0, garantia: 150.0 },
     { marca: 'Suzuki', modelo: 'Vitara', tipo: 'SUV', precio: 42.0, garantia: 200.0 },
     { marca: 'Hyundai', modelo: 'Tucson', tipo: 'SUV', precio: 47.0, garantia: 200.0 },
+    { marca: 'Toyota', modelo: 'RAV4', tipo: 'SUV', precio: 48.0, garantia: 200.0 },
+    { marca: 'Honda', modelo: 'HR-V', tipo: 'SUV', precio: 40.0, garantia: 180.0 },
+    { marca: 'Kia', modelo: 'Sportage', tipo: 'SUV', precio: 45.0, garantia: 200.0 },
+    { marca: 'Mazda', modelo: 'CX-5', tipo: 'SUV', precio: 46.0, garantia: 200.0 },
+    { marca: 'Nissan', modelo: 'Sentra', tipo: 'Sedán', precio: 32.0, garantia: 150.0 },
+    { marca: 'Toyota', modelo: 'Yaris', tipo: 'Hatchback', precio: 28.0, garantia: 120.0 },
+    { marca: 'Chevrolet', modelo: 'Onix', tipo: 'Hatchback', precio: 27.0, garantia: 120.0 },
+    { marca: 'Volkswagen', modelo: 'Polo', tipo: 'Hatchback', precio: 29.0, garantia: 130.0 },
+    { marca: 'Ford', modelo: 'Fiesta', tipo: 'Hatchback', precio: 27.0, garantia: 120.0 },
+    { marca: 'Renault', modelo: 'Duster', tipo: 'SUV', precio: 38.0, garantia: 180.0 },
+    { marca: 'Mitsubishi', modelo: 'L200', tipo: 'Pickup', precio: 55.0, garantia: 250.0 },
+    { marca: 'Toyota', modelo: 'Hilux', tipo: 'Pickup', precio: 60.0, garantia: 250.0 }
   ];
 
-  const colores = ['Rojo', 'Azul', 'Negro', 'Blanco', 'Gris', 'Plata'];
+  const colores = ['Rojo', 'Azul', 'Negro', 'Blanco', 'Gris', 'Plata', 'Verde', 'Amarillo', 'Café', 'Beige'];
   const combustibles = [Combustible.GASOLINA, Combustible.DIESEL, Combustible.ELECTRICO, Combustible.HIBRIDO];
   const transmisiones = [Transmision.AUTOMATICO, Transmision.MANUAL];
 
   const autos = [];
+  
+  // Definimos IDs de rentadores (del 2 al 11)
+  const rentadoresIds = usuarios.filter(u => u.idUsuario >= 2 && u.idUsuario <= 11).map(u => u.idUsuario);
 
-  // Distribuimos autos entre usuarios, excepto el admin (usuarios[0])
+  // Distribuimos autos entre rentadores
   for (let i = 0; i < marcasModelos.length; i++) {
-    const usuarioIndex = (i % (usuarios.length - 1)) + 1; // +1 para saltar al admin
+    // Asignamos de forma circular a los rentadores
+    const rentadorId = rentadoresIds[i % rentadoresIds.length];
     const auto = marcasModelos[i];
     
     const placa = `ABC-${1000 + i}`;
     const año = 2015 + Math.floor(Math.random() * 9); // Años entre 2015-2023
     const kilometraje = Math.floor(Math.random() * 50000);
     
+    // Algunos autos tienen mejor calificación inicial
+    const tieneCalificacion = Math.random() > 0.6;
+    const calificacionPromedio = tieneCalificacion ? 3 + Math.random() * 2 : null; // Entre 3 y 5
+    const totalComentarios = tieneCalificacion ? Math.floor(Math.random() * 10) + 1 : 0;
+    
     const nuevoAuto = await prisma.auto.create({
       data: {
-        idPropietario: usuarios[usuarioIndex].idUsuario,
+        idPropietario: rentadorId,
         marca: auto.marca,
         modelo: auto.modelo,
-        descripcion: `${auto.marca} ${auto.modelo} en excelente estado, ideal para viajes.`,
+        descripcion: `${auto.marca} ${auto.modelo} en excelente estado, ideal para viajes. ${
+          auto.tipo === 'SUV' ? 'Espacioso y cómodo para toda la familia.' : 
+          auto.tipo === 'Pickup' ? 'Perfecto para trabajo y aventuras.' : 
+          'Económico y confortable.'
+        }`,
         precioRentaDiario: auto.precio,
         montoGarantia: auto.garantia,
         kilometraje: kilometraje,
@@ -157,11 +208,13 @@ async function crearAutos(usuarios) {
         año: año,
         placa: placa,
         color: colores[Math.floor(Math.random() * colores.length)],
-        asientos: auto.tipo === 'SUV' ? 7 : 5,
+        asientos: auto.tipo === 'SUV' ? 7 : auto.tipo === 'Pickup' ? 5 : 5,
         transmision: transmisiones[Math.floor(Math.random() * transmisiones.length)],
         combustible: combustibles[Math.floor(Math.random() * combustibles.length)],
         imagenes: `/${auto.marca.toLowerCase()}_${auto.modelo.toLowerCase()}.jpg`,
-        estado: EstadoAuto.ACTIVO
+        estado: EstadoAuto.ACTIVO,
+        calificacionPromedio: calificacionPromedio,
+        totalComentarios: totalComentarios
       }
     });
     
@@ -183,8 +236,8 @@ async function crearDisponibilidad(autos) {
   const hoy = new Date();
   const disponibilidades = [];
 
-  // Crearemos periodos de no disponibilidad para algunos autos (no todos)
-  for (let i = 0; i < 5; i++) {
+  // Crearemos periodos de no disponibilidad para algunos autos (aproximadamente 30%)
+  for (let i = 0; i < Math.floor(autos.length * 0.3); i++) {
     const autoIndex = Math.floor(Math.random() * autos.length);
     const motivo = motivos[Math.floor(Math.random() * motivos.length)];
     
@@ -224,69 +277,177 @@ async function crearReservas(autos, usuarios) {
   const hoy = new Date();
   const reservas = [];
   
-  // Creamos 20 reservas en estado SOLICITADA
-  for (let i = 0; i < 20; i++) {
+  // Obtener IDs de clientes (los que no son admin ni rentadores)
+  const clientesIds = usuarios
+    .filter(u => u.idUsuario > 11 && !u.esAdmin)
+    .map(u => u.idUsuario);
+  
+  // Estados posibles de reserva
+  const estados = [
+    EstadoReserva.SOLICITADA,
+    EstadoReserva.APROBADA,
+    EstadoReserva.RECHAZADA,
+    EstadoReserva.CANCELADA,
+    EstadoReserva.FINALIZADA,
+    EstadoReserva.EN_CURSO
+  ];
+  
+  // Distribuimos de forma que haya más SOLICITADAS, APROBADAS y FINALIZADAS
+  const distribucionEstados = [
+    ...Array(15).fill(EstadoReserva.SOLICITADA),
+    ...Array(10).fill(EstadoReserva.APROBADA),
+    ...Array(5).fill(EstadoReserva.RECHAZADA),
+    ...Array(3).fill(EstadoReserva.CANCELADA),
+    ...Array(10).fill(EstadoReserva.FINALIZADA),
+    ...Array(7).fill(EstadoReserva.EN_CURSO)
+  ];
+  
+  // Crear 50 reservas con diferentes estados
+  for (let i = 0; i < 50; i++) {
     const autoIndex = Math.floor(Math.random() * autos.length);
-    const clienteIndex = Math.floor(Math.random() * (usuarios.length - 1)) + 1; // +1 para saltar al admin
+    const clienteIndex = Math.floor(Math.random() * clientesIds.length);
+    const clienteId = clientesIds[clienteIndex];
     
-    // Fechas futuras para reservas no finalizadas
-    const diasEnFuturo = Math.floor(Math.random() * 30) + 1; // Entre 1 y 30 días en futuro
-    const fechaInicio = new Date(hoy);
-    fechaInicio.setDate(hoy.getDate() + diasEnFuturo);
+    const estado = distribucionEstados[i % distribucionEstados.length];
     
-    const duracion = Math.floor(Math.random() * 5) + 1; // Entre 1 y 5 días
-    const fechaFin = new Date(fechaInicio);
-    fechaFin.setDate(fechaInicio.getDate() + duracion);
-
+    // Definir fechas según el estado
+    let fechaInicio, fechaFin, fechaSolicitud, fechaAprobacion, fechaLimitePago;
+    let estaPagada = false;
+    let kilometrajeInicial = null;
+    let kilometrajeFinal = null;
+    
     // Fecha de solicitud es hoy o hace pocos días
-    const fechaSolicitud = new Date(hoy);
-    fechaSolicitud.setDate(hoy.getDate() - Math.floor(Math.random() * 5)); // 0-5 días atrás
+    fechaSolicitud = new Date(hoy);
+    fechaSolicitud.setDate(hoy.getDate() - Math.floor(Math.random() * 15)); // 0-15 días atrás
     
     // Fecha límite de pago
-    const fechaLimitePago = new Date(fechaSolicitud);
+    fechaLimitePago = new Date(fechaSolicitud);
     fechaLimitePago.setDate(fechaSolicitud.getDate() + 2); // 2 días después de solicitud
     
+    if (estado === EstadoReserva.SOLICITADA) {
+      // Fechas futuras para reservas solicitadas
+      const diasEnFuturo = Math.floor(Math.random() * 30) + 1;
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() + diasEnFuturo);
+      
+      const duracion = Math.floor(Math.random() * 5) + 1;
+      fechaFin = new Date(fechaInicio);
+      fechaFin.setDate(fechaInicio.getDate() + duracion);
+      
+      fechaAprobacion = null;
+      estaPagada = false;
+    } 
+    else if (estado === EstadoReserva.APROBADA) {
+      // Fechas futuras para reservas aprobadas
+      const diasEnFuturo = Math.floor(Math.random() * 20) + 1;
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() + diasEnFuturo);
+      
+      const duracion = Math.floor(Math.random() * 5) + 1;
+      fechaFin = new Date(fechaInicio);
+      fechaFin.setDate(fechaInicio.getDate() + duracion);
+      
+      fechaAprobacion = new Date(fechaSolicitud);
+      fechaAprobacion.setDate(fechaSolicitud.getDate() + 1);
+      
+      estaPagada = Math.random() > 0.3; // 70% están pagadas
+    }
+    else if (estado === EstadoReserva.EN_CURSO) {
+      // Fechas para reservas en curso
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() - Math.floor(Math.random() * 3)); // 0-3 días atrás
+      
+      const duracion = Math.floor(Math.random() * 5) + 1;
+      fechaFin = new Date(fechaInicio);
+      fechaFin.setDate(fechaInicio.getDate() + duracion);
+      
+      fechaAprobacion = new Date(fechaSolicitud);
+      fechaAprobacion.setDate(fechaSolicitud.getDate() + 1);
+      
+      estaPagada = true;
+      kilometrajeInicial = autos[autoIndex].kilometraje;
+    }
+    else if (estado === EstadoReserva.FINALIZADA) {
+      // Fechas pasadas para reservas finalizadas
+      const diasEnPasado = Math.floor(Math.random() * 60) + 5; // 5-65 días atrás
+      fechaFin = new Date(hoy);
+      fechaFin.setDate(hoy.getDate() - diasEnPasado);
+      
+      const duracion = Math.floor(Math.random() * 5) + 1;
+      fechaInicio = new Date(fechaFin);
+      fechaInicio.setDate(fechaFin.getDate() - duracion);
+      
+      fechaSolicitud = new Date(fechaInicio);
+      fechaSolicitud.setDate(fechaInicio.getDate() - Math.floor(Math.random() * 10) - 1);
+      
+      fechaAprobacion = new Date(fechaSolicitud);
+      fechaAprobacion.setDate(fechaSolicitud.getDate() + 1);
+      
+      fechaLimitePago = new Date(fechaAprobacion);
+      fechaLimitePago.setDate(fechaAprobacion.getDate() + 1);
+      
+      estaPagada = true;
+      kilometrajeInicial = autos[autoIndex].kilometraje - Math.floor(Math.random() * 500);
+      kilometrajeFinal = kilometrajeInicial + Math.floor(Math.random() * 500) + 50;
+    }
+    else if (estado === EstadoReserva.RECHAZADA || estado === EstadoReserva.CANCELADA) {
+      // Fechas para reservas rechazadas o canceladas
+      const diasEnFuturo = Math.floor(Math.random() * 20) + 5;
+      fechaInicio = new Date(hoy);
+      fechaInicio.setDate(hoy.getDate() + diasEnFuturo);
+      
+      const duracion = Math.floor(Math.random() * 5) + 1;
+      fechaFin = new Date(fechaInicio);
+      fechaFin.setDate(fechaInicio.getDate() + duracion);
+      
+      if (estado === EstadoReserva.RECHAZADA) {
+        fechaAprobacion = null;
+      } else {
+        fechaAprobacion = new Date(fechaSolicitud);
+        fechaAprobacion.setDate(fechaSolicitud.getDate() + 1);
+      }
+      
+      estaPagada = false;
+    }
+    
     const precioRentaDiario = autos[autoIndex].precioRentaDiario;
-    const montoTotal = precioRentaDiario * duracion;
+    const duracionDias = Math.floor((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1;
+    const montoTotal = precioRentaDiario * duracionDias;
     
     const reserva = await prisma.reserva.create({
       data: {
         idAuto: autos[autoIndex].idAuto,
-        idCliente: usuarios[clienteIndex].idUsuario,
+        idCliente: clienteId,
         fechaInicio: fechaInicio,
         fechaFin: fechaFin,
-        estado: EstadoReserva.SOLICITADA,
+        estado: estado,
         fechaSolicitud: fechaSolicitud,
-        fechaAprobacion: null, // Sin fecha de aprobación para estado SOLICITADA
+        fechaAprobacion: fechaAprobacion,
         fechaLimitePago: fechaLimitePago,
         montoTotal: montoTotal,
-        kilometrajeInicial: null, // Aún no inicia
-        kilometrajeFinal: null,   // Aún no finaliza
-        estaPagada: false
+        kilometrajeInicial: kilometrajeInicial,
+        kilometrajeFinal: kilometrajeFinal,
+        estaPagada: estaPagada
       }
     });
     
     reservas.push(reserva);
   }
 
-  console.log(`Creadas ${reservas.length} reservas solicitadas`);
-  {/**
-  // Imprimir IDs de reservas solicitadas
-  console.log('IDs de reservas solicitadas:');
-  reservas.forEach(r => console.log(`ID: ${r.idReserva}, Auto: ${r.idAuto}, Cliente: ${r.idCliente}`));
-  
-  */}
-  
+  console.log(`Creadas ${reservas.length} reservas con diferentes estados`);
   return reservas;
 }
 
 async function crearPagos(reservas) {
-  const metodosPago = [MetodoPago.QR, MetodoPago.TARJETA_DEBITO];
+  const metodosPago = [MetodoPago.QR, MetodoPago.TARJETA_DEBITO, MetodoPago.EFECTIVO, MetodoPago.TRANSFERENCIA];
   const pagos = [];
 
-  // Crear pagos para reservas pagadas o finalizadas
+  // Crear pagos para reservas pagadas, en curso o finalizadas
   for (const reserva of reservas) {
-    if (reserva.estaPagada || reserva.estado === EstadoReserva.FINALIZADA) {
+    if (reserva.estaPagada || 
+        reserva.estado === EstadoReserva.FINALIZADA || 
+        reserva.estado === EstadoReserva.EN_CURSO) {
+      
       const metodoPago = metodosPago[Math.floor(Math.random() * metodosPago.length)];
       
       // Pago de renta
@@ -297,14 +458,15 @@ async function crearPagos(reservas) {
           metodoPago: metodoPago,
           referencia: `REF-${Math.floor(Math.random() * 10000)}`,
           comprobante: `/comprobantes/pago_${reserva.idReserva}.pdf`,
-          tipo: TipoPago.RENTA
+          tipo: TipoPago.RENTA,
+          fechaPago: new Date(reserva.fechaAprobacion || reserva.fechaSolicitud)
         }
       });
       
       pagos.push(pagoRenta);
       
-      // Algunos también tendrán pago de garantía
-      if (Math.random() > 0.3) {
+      // La mayoría también tendrán pago de garantía
+      if (Math.random() > 0.2) {
         const auto = await prisma.auto.findUnique({
           where: { idAuto: reserva.idAuto }
         });
@@ -316,7 +478,8 @@ async function crearPagos(reservas) {
             metodoPago: metodoPago,
             referencia: `GREF-${Math.floor(Math.random() * 10000)}`,
             comprobante: `/comprobantes/garantia_${reserva.idReserva}.pdf`,
-            tipo: TipoPago.GARANTIA
+            tipo: TipoPago.GARANTIA,
+            fechaPago: new Date(reserva.fechaAprobacion || reserva.fechaSolicitud)
           }
         });
         
@@ -343,9 +506,17 @@ async function crearGarantias(reservas) {
     });
     
     if (pagoGarantia) {
-      const estado = reserva.estado === EstadoReserva.FINALIZADA 
-        ? EstadoGarantia.LIBERADA 
-        : EstadoGarantia.DEPOSITADA;
+      let estado;
+      
+      if (reserva.estado === EstadoReserva.FINALIZADA) {
+        estado = EstadoGarantia.LIBERADA;
+      } else if (reserva.estado === EstadoReserva.EN_CURSO) {
+        estado = EstadoGarantia.DEPOSITADA;
+      } else if (reserva.estado === EstadoReserva.APROBADA && reserva.estaPagada) {
+        estado = EstadoGarantia.DEPOSITADA;
+      } else {
+        estado = EstadoGarantia.PENDIENTE;
+      }
       
       const fechaLiberacion = estado === EstadoGarantia.LIBERADA
         ? new Date(reserva.fechaFin) // Un día después de finalizar la reserva
@@ -357,7 +528,7 @@ async function crearGarantias(reservas) {
           monto: pagoGarantia.monto,
           estado: estado,
           fechaLiberacion: fechaLiberacion,
-          comprobante: `/comprobantes/devolucion_${reserva.idReserva}.pdf`
+          comprobante: fechaLiberacion ? `/comprobantes/devolucion_${reserva.idReserva}.pdf` : null
         }
       });
       
