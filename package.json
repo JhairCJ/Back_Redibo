@@ -7,7 +7,6 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/index.ts",
     "start": "ts-node src/index.ts",
-    "build": "npx prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
@@ -20,7 +19,9 @@
   ],
   "author": "",
   "license": "ISC",
+  "packageManager": "pnpm@10.7.1",
   "dependencies": {
+    "@faker-js/faker": "^9.7.0",
     "@prisma/client": "^6.5.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
@@ -38,5 +39,4 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3"
   }
-  
 }

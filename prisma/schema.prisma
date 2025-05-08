@@ -21,17 +21,58 @@ model Usuario {
   fechaRegistro     DateTime           @default(now())
   contraseña        String
   esAdmin           Boolean            @default(false)
+  // ! Rol del usuario eliminado, ya que el usuario puede ser dos cosas a la vez(arrendador, rentador o driver)
+  notificaciones    Notificacion[]     // Relación con las notificaciones
   autos             Auto[]             // Relación con los autos que posee
   reservas          Reserva[]          // Relación con sus reservas como cliente
   comentariosEscritos Comentario[]     // Comentarios que este usuario ha escrito sobre autos
+  calificacionesRecibidas CalificacionUsuario[] @relation("UsuarioCalificado") // Calificaciones que este usuario ha recibido
+  calificacionesRealizadas CalificacionUsuario[] @relation("UsuarioCalificador") // Calificaciones que este usuario ha dado a otros
   
   @@map("usuarios")
 }
 
-// Modelo para automóviles
+// Modelo para notificaciones
+model Notificacion {
+  idNotificacion            Int                @id @default(autoincrement())
+  idUsuario     Int
+  titulo        String                @db.VarChar(100)
+  mensaje       String
+  idEntidad     String?
+  tipoEntidad   String?               @db.VarChar(50)
+  leido         Boolean               @default(false)
+  leidoEn       DateTime?
+  creadoEn      DateTime              @default(now())
+  actualizadoEn DateTime              @updatedAt
+  haSidoBorrada Boolean               @default(false)
+  tipo          TipoDeNotificacion
+  prioridad     PrioridadNotificacion @default(MEDIA)
+  usuario       Usuario               @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+
+  @@unique([idUsuario, idEntidad, tipo], name: "notificacionUnicaUsuarioEntidad")
+  @@index([idUsuario])
+  @@index([creadoEn])
+  @@index([leido, idUsuario])
+  @@index([idUsuario, haSidoBorrada])
+}
+
+model Ubicacion {
+  idUbicacion       Int                @id @default(autoincrement())
+  nombre            String             @unique
+  descripcion       String?
+  latitud           Float              // Coordenada de latitud
+  longitud          Float              // Coordenada de longitud
+  esActiva          Boolean            @default(true)
+  autos             Auto[]             // Relación con los autos que se rentaran en esta ubicación
+  @@map("ubicaciones")
+}
+
+// Modelo para automóviles 
 model Auto {
   idAuto            Int                @id @default(autoincrement())
   idPropietario     Int
+  idUbicacion       Int
+  ubicacion         Ubicacion          @relation(fields: [idUbicacion], references: [idUbicacion])
   propietario       Usuario            @relation(fields: [idPropietario], references: [idUsuario])
   marca             String
   modelo            String
@@ -52,12 +93,25 @@ model Auto {
   estado            EstadoAuto         @default(ACTIVO)  // ACTIVO o INACTIVO (si esta inactivo no sale en el sistema para rentar)
   fechaAdquisicion  DateTime           @default(now())
   historialMantenimiento HistorialMantenimiento[]
-  imagenes          String?
+  imagenes          Imagen[]           // Relación con las imágenes del auto
   asientos          Int                @default(5) // Cantidad de asientos
+  capacidadMaletero Int                // Nueva propiedad: capacidad del maletero
   transmision       Transmision        // Tipo de transmisión (Automático, Manual)
   combustible       Combustible        // Tipo de combustible (Gasolina, Diesel, Eléctrico)
-  
+  diasTotalRenta     Int?               // Total de días que ha sido rentado
+  vecesAlquilado     Int?               // Total de veces que ha sido alquilado
   @@map("autos")
+  @@index([idUbicacion])
+}
+
+// Nuevo modelo para imágenes de autos
+model Imagen {
+  idImagen          Int                @id @default(autoincrement())
+  idAuto            Int
+  auto              Auto               @relation(fields: [idAuto], references: [idAuto])
+  direccionImagen   String             // URL o ruta de la imagen
+  
+  @@map("imagenes")
 }
 
 
@@ -93,6 +147,7 @@ model Reserva {
   garantia          Garantia?
   comentario        Comentario?        // Un comentario puede estar asociado a una reserva específica
   estaPagada        Boolean            @default(false)  // Indica si la reserva está pagada
+  calificaciones CalificacionUsuario[] // Calificaciones asociadas a esta reserva
 
   @@map("reservas")
 }
@@ -148,13 +203,37 @@ model Comentario {
   auto              Auto               @relation(fields: [idAuto], references: [idAuto])
   idUsuario         Int                // Usuario que escribió el comentario
   usuario           Usuario            @relation(fields: [idUsuario], references: [idUsuario])
-  contenido         String
+  contenido         String?
   calificacion      Int                @db.SmallInt
   fechaCreacion     DateTime           @default(now())
   idReserva         Int?               @unique
   reserva           Reserva?           @relation(fields: [idReserva], references: [idReserva])
   
   @@map("comentarios")
+}
+
+// Modelo para calificaciones de usuarios
+model CalificacionUsuario {
+  idCalificacion    Int                @id @default(autoincrement())
+  idCalificador     Int                // Usuario que da la calificación
+  calificador       Usuario            @relation("UsuarioCalificador", fields: [idCalificador], references: [idUsuario])
+  idCalificado      Int                // Usuario que recibe la calificación
+  calificado        Usuario            @relation("UsuarioCalificado", fields: [idCalificado], references: [idUsuario])
+  puntuacion        Int                @db.SmallInt     // Puntuación (de 1 a 5)
+  comentario        String?            // Comentario opcional
+  fechaCreacion     DateTime           @default(now())
+  idReserva         Int                // Reserva asociada a esta calificación
+  reserva           Reserva            @relation(fields: [idReserva], references: [idReserva])
+  tipoCalificacion  TipoCalificacionUsuario // Para diferenciar si es calificación como arrendador o arrendatario
+  
+  @@map("calificaciones_usuarios")
+  @@index([idCalificado])
+  @@index([idCalificador])
+}
+
+enum TipoCalificacionUsuario {
+  ARRENDADOR    // Calificación al dueño del auto
+  ARRENDATARIO  // Calificación al cliente que rentó
 }
 
 enum EstadoReserva {
@@ -212,4 +291,28 @@ enum MotivoNoDisponibilidad {
 enum TipoPago {
   RENTA
   GARANTIA
+}
+
+enum RolUsuario {
+  ARRENDADOR
+  RENTADOR
+  DRIVER
+}
+
+enum PrioridadNotificacion {
+  BAJA
+  MEDIA
+  ALTA
+}
+
+enum TipoDeNotificacion {
+  RESERVA_SOLICITADA // * el rentador solicita una reserva
+  RESERVA_APROBADA  // * el arrendador aprueba la reserva
+  RESERVA_RECHAZADA // * el arrendador rechaza la reserva
+  DEPOSITO_CONFIRMADO // * el rentador confirma la reserva (ya pago)
+  DEPOSITO_RECIBIDO
+  RESERVA_CANCELADA // * el rentador cancela la reserva o no pago a tiempo
+  ALQUILER_FINALIZADO // * culmino la renta del auto
+  RESERVA_MODIFICADA
+  VEHICULO_CALIFICADO
 }
