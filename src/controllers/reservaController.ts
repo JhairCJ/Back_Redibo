@@ -75,6 +75,7 @@ async function detallesReservaAuto(idReserva: number) {
       costes: {
         precio: precioDiario,
         dias: dias,
+        tarifa: 14, // !aun no se sabe si esto habra
         garantia: garantia,
         total: total,
       },

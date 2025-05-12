@@ -1042,11 +1042,21 @@ async function crearNotificaciones(usuarios, reservas, autos) {
           fechaCreacion = reserva.fechaFin;
           break;
         default:
-          fechaCreacion = faker.date.between({ from: reserva.fechaSolicitud, to: new Date() });
+          // Corrección: asegurarse que la fecha 'from' sea anterior a la fecha 'to'
+          const ahora = new Date();
+          const fechaBase = reserva.fechaSolicitud && reserva.fechaSolicitud <= ahora ? 
+                         reserva.fechaSolicitud : 
+                         new Date(ahora.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 días atrás por defecto
+          
+          fechaCreacion = faker.date.between({ 
+            from: fechaBase, 
+            to: ahora 
+          });
       }
       
       // Estado de lectura (más antiguas tienen más probabilidad de estar leídas)
-      const diasDesdeCreacion = (new Date() - fechaCreacion) / (1000 * 60 * 60 * 24);
+      const ahora = new Date();
+      const diasDesdeCreacion = (ahora - fechaCreacion) / (1000 * 60 * 60 * 24);
       const probabilidadLeida = Math.min(0.9, diasDesdeCreacion / 30); // Mayor probabilidad si es más antiguo
       const leido = Math.random() < probabilidadLeida;
       const leidoEn = leido ? new Date(fechaCreacion.getTime() + Math.random() * 24 * 60 * 60 * 1000) : null; // 0-24h después
@@ -1091,8 +1101,8 @@ async function crearNotificaciones(usuarios, reservas, autos) {
       // Reemplazar placeholders en el mensaje
       const mensaje = plantilla.mensaje.replace('{modelo}', `${auto.marca} ${auto.modelo}`);
       
-      // Fecha de creación (en los últimos 3 meses)
-      const fechaCreacion = faker.date.recent({ days: 90 });
+      // Corrección: asegurarse que se genere una fecha válida en el pasado
+      const fechaCreacion = faker.date.past({ days: 90 }); // Usa past en lugar de recent para evitar problemas
       
       // Estado de lectura
       const leido = Math.random() < 0.7; // 70% leídas
