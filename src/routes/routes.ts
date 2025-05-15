@@ -14,31 +14,43 @@ Define las rutas (URL's) de la API
 import { Request, Response } from 'express';
 
 //imports locales
-import { marcarActivo, marcarInactivo, ponerEnMantenimiento, finalizarMantenimiento } from '../controllers/autoController';
+import { marcarActivo, marcarInactivo, ponerEnMantenimiento, finalizarMantenimiento, obtenerAutosDelPropietario, liberarAuto } from '../controllers/autoController';
 import { obtenerDetallesReservaAuto, obtenerSolicitudesDeReserva, aceptarReserva, denegarReserva } from '../controllers/reservaController';
 
 const express = require('express');
 const router = express.Router();
 
 // ******* AUTO CONTROLLER ********
+// * GETTERS
+// Obtener todos los autos de un arrendador con su estado
+router.get('/autos/arrendador/:idArrendador', obtenerAutosDelPropietario);
+
+// *PUTTERS
 // Marcar auto como activo (disponible para renta)
 router.put('/autos/:idAuto/activar', marcarActivo);
 // Marcar auto como inactivo (no disponible para renta)
 router.put('/autos/:idAuto/inactivar', marcarInactivo);
+
+// *POSTERS
 // Poner un auto en mantenimiento
 router.post('/autos/:idAuto/mantenimiento', ponerEnMantenimiento);
 // Finalizar mantenimiento de un auto
-router.post('/mantenimiento/:idMantenimiento/finalizar', finalizarMantenimiento);
+router.post('/mantenimiento/:idHistorial/finalizar', finalizarMantenimiento);
+
 
 // ******* RESERVA CONTROLLER ********
+// * GETTERS
 // Obtener los datos de una reserva junto con detalles del auto
 router.get('/reservas/:idReserva/detalles', obtenerDetallesReservaAuto);
 // Obtener todas las reservas solicitadas de un propietario específico
 router.get('/reservas/propietario/:idPropietario', obtenerSolicitudesDeReserva);
+// * PUTTERS
 // Aceptar una reserva de id idReserva
 router.put('/reservas/:idReserva/aceptar', aceptarReserva);
 // Denegar una reserva de id idReserva
 router.put('/reservas/:idReserva/denegar', denegarReserva);
+// Liberar una reserva de un auto
+router.put('/reservas/:idReserva/liberar', liberarAuto);
 
 
 router.get('/test', (req: Request, res: Response) => {

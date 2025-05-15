@@ -22,10 +22,10 @@ model Usuario {
   contraseña        String
   esAdmin           Boolean            @default(false)
   // ! Rol del usuario eliminado, ya que el usuario puede ser dos cosas a la vez(arrendador, rentador o driver)
-  notificaciones    Notificacion[]     // Relación con las notificaciones
-  autos             Auto[]             // Relación con los autos que posee
-  reservas          Reserva[]          // Relación con sus reservas como cliente
-  comentariosEscritos Comentario[]     // Comentarios que este usuario ha escrito sobre autos
+  notificaciones    Notificacion[]
+  autos             Auto[] 
+  reservas          Reserva[]
+  comentariosEscritos Comentario[] 
   calificacionesRecibidas CalificacionUsuario[] @relation("UsuarioCalificado") // Calificaciones que este usuario ha recibido
   calificacionesRealizadas CalificacionUsuario[] @relation("UsuarioCalificador") // Calificaciones que este usuario ha dado a otros
   
@@ -60,8 +60,8 @@ model Ubicacion {
   idUbicacion       Int                @id @default(autoincrement())
   nombre            String             @unique
   descripcion       String?
-  latitud           Float              // Coordenada de latitud
-  longitud          Float              // Coordenada de longitud
+  latitud           Float 
+  longitud          Float 
   esActiva          Boolean            @default(true)
   autos             Auto[]             // Relación con los autos que se rentaran en esta ubicación
   @@map("ubicaciones")
@@ -93,7 +93,7 @@ model Auto {
   estado            EstadoAuto         @default(ACTIVO)  // ACTIVO o INACTIVO (si esta inactivo no sale en el sistema para rentar)
   fechaAdquisicion  DateTime           @default(now())
   historialMantenimiento HistorialMantenimiento[]
-  imagenes          Imagen[]           // Relación con las imágenes del auto
+  imagenes          Imagen[]           // imágenes del auto
   asientos          Int                @default(5) // Cantidad de asientos
   capacidadMaletero Int                // Nueva propiedad: capacidad del maletero
   transmision       Transmision        // Tipo de transmisión (Automático, Manual)

@@ -177,8 +177,11 @@ export const ponerEnMantenimiento = async (req: Request, res: Response) => {
     
   } catch (error: any) {
     console.error('Error al poner auto en mantenimiento:', error);
-    
-    return res.status(500).json({ error: 'Error al procesar la solicitud de mantenimiento' });
+
+    return res.status(500).json({
+      error: 'Error al procesar la solicitud de mantenimiento',
+      detalle: error.message || error.toString()
+    });
   }
 };
 
@@ -199,6 +202,9 @@ export const finalizarMantenimiento = async (req: Request, res: Response) => {
         where: { idHistorial: idHistorial },
         data: { 
           fechaFin: new Date() 
+        },
+        include: {
+          auto: true
         }
       });
 
@@ -209,12 +215,13 @@ export const finalizarMantenimiento = async (req: Request, res: Response) => {
           motivo: 'MANTENIMIENTO' 
         }
       });
-
+      const fechaBolivia = new Date(Date.now() - (4 * 60 * 60 * 1000));
+      
       // Actualizar registro de disponibilidad
       if (disponibilidad) {
         await tx.disponibilidad.update({
           where: { idDisponibilidad: disponibilidad.idDisponibilidad },
-          data: { fechaFin: new Date() }
+          data: { fechaFin: fechaBolivia }
         });
       }
 
@@ -244,3 +251,343 @@ export const finalizarMantenimiento = async (req: Request, res: Response) => {
   }
 };
 
+// Función para obtener todos los autos de un propietario con su estado actual (Gestionar vehiculos)
+async function obtenerAutosPropietario(idPropietario: number) {
+  // Obtener la fecha actual para comparar con las reservas y mantenimientos
+  const fechaActual = new Date();
+
+  // Obtener todos los autos del propietario
+  const autos = await prisma.auto.findMany({
+    where: {
+      idPropietario: idPropietario
+    },
+    include: {
+      // Incluir las reservas activas (no finalizadas)
+      reservas: {
+        where: {
+          OR: [
+            { estado: 'CONFIRMADA' },
+            { estado: 'EN_CURSO' },
+            { estado: 'APROBADA' }
+          ]
+        },
+        orderBy: {
+          fechaInicio: 'asc'
+        },
+        include: {
+          cliente: {
+            select: {
+              idUsuario: true,
+              nombre: true,
+              apellido: true,
+              email: true,
+              telefono: true
+            }
+          }
+        }
+      },
+      // Incluir mantenimientos actuales
+      historialMantenimiento: {
+        where: {
+          OR: [
+            { fechaFin: null },
+            { fechaFin: { gte: fechaActual } }
+          ],
+          fechaInicio: { lte: fechaActual }
+        },
+        orderBy: {
+          fechaInicio: 'asc'
+        }
+      },
+      // Incluir disponibilidad (periodos en los que no está disponible)
+      disponibilidad: {
+        where: {
+          fechaInicio: { lte: fechaActual },
+          fechaFin: { gte: fechaActual }
+        }
+      },
+      // Incluir información de ubicación
+      ubicacion: true
+    }
+  });
+
+  // Transformar los datos para agregar información de estado
+  const autosConEstado = autos.map(auto => {
+    // Identificar si hay una reserva en estado EN_CURSO con fecha fin pasada (necesita ser liberada)
+    const reservaParaLiberar = auto.reservas.find(
+      reserva => reserva.estado === 'EN_CURSO' && new Date(reserva.fechaFin) < fechaActual
+    );
+    
+    // Si hay una reserva para liberar, es prioridad mostrarla
+    if (reservaParaLiberar) {
+      return {
+        ...auto,
+        reservas: undefined,
+        historialMantenimiento: undefined,
+        disponibilidad: undefined,
+        estadoActual: {
+          tipo: 'RENTA_FINALIZADA_POR_LIBERAR',
+          datos: {
+            idReserva: reservaParaLiberar.idReserva,
+            fechaInicio: reservaParaLiberar.fechaInicio,
+            fechaFin: reservaParaLiberar.fechaFin,
+            estado: reservaParaLiberar.estado,
+            cliente: reservaParaLiberar.cliente,
+            accionPosible: 'FINALIZAR_RENTA'
+          }
+        }
+      };
+    }
+
+    // Verificar otras condiciones si no hay reserva para liberar
+    // Filtrar las reservas que siguen vigentes (fechaFin >= fechaActual)
+    const reservasVigentes = auto.reservas.filter(reserva => 
+      new Date(reserva.fechaFin) >= fechaActual
+    );
+    
+    // Verificar si el auto está en una renta activa vigente
+    const rentaActiva = reservasVigentes.length > 0 ? reservasVigentes[0] : null;
+    
+    // Verificar si el auto está en mantenimiento
+    const mantenimientoActivo = auto.historialMantenimiento.length > 0 ? 
+      auto.historialMantenimiento[0] : null;
+    
+    // Verificar si el auto está en periodo de no disponibilidad
+    const periodoNoDisponible = auto.disponibilidad.length > 0 ? 
+      auto.disponibilidad[0] : null;
+
+    // Determinar el estado actual del auto
+    let estadoActual = null;
+    if (rentaActiva) {
+      estadoActual = {
+        tipo: 'RENTA_ACTIVA',
+        datos: {
+          idReserva: rentaActiva.idReserva,
+          fechaInicio: rentaActiva.fechaInicio,
+          fechaFin: rentaActiva.fechaFin,
+          estado: rentaActiva.estado,
+          cliente: rentaActiva.cliente,
+          accionPosible: rentaActiva.estado === 'EN_CURSO' ? 'FINALIZAR_RENTA' : 'CANCELAR_RESERVA'
+        }
+      };
+    } else if (mantenimientoActivo) {
+      estadoActual = {
+        tipo: 'EN_MANTENIMIENTO',
+        datos: {
+          idHistorial: mantenimientoActivo.idHistorial,
+          fechaInicio: mantenimientoActivo.fechaInicio,
+          fechaFinPrevista: mantenimientoActivo.fechaFin,
+          tipoMantenimiento: mantenimientoActivo.tipoMantenimiento,
+          descripcion: mantenimientoActivo.descripcion,
+          accionPosible: 'FINALIZAR_MANTENIMIENTO'
+        }
+      };
+    } else if (periodoNoDisponible) {
+      estadoActual = {
+        tipo: 'NO_DISPONIBLE',
+        datos: {
+          idDisponibilidad: periodoNoDisponible.idDisponibilidad,
+          fechaInicio: periodoNoDisponible.fechaInicio,
+          fechaFin: periodoNoDisponible.fechaFin,
+          motivo: periodoNoDisponible.motivo,
+          descripcion: periodoNoDisponible.descripcion,
+          accionPosible: 'FINALIZAR_PERIODO_NO_DISPONIBLE'
+        }
+      };
+    } else {
+      estadoActual = {
+        tipo: 'DISPONIBLE',
+        datos: {
+          accionPosible: auto.estado === 'ACTIVO' ? 'MARCAR_NO_DISPONIBLE' : 'MARCAR_DISPONIBLE'
+        }
+      };
+    }
+
+    // Retornar el auto con su estado actual
+    return {
+      ...auto,
+      reservas: undefined, // Quitamos los arrays originales para evitar duplicación
+      historialMantenimiento: undefined,
+      disponibilidad: undefined,
+      estadoActual
+    };
+  });
+
+  return autosConEstado;
+}
+
+// Controlador para manejar la solicitud de obtener autos de un propietario
+export const obtenerAutosDelPropietario = async (req: Request, res: Response) => {
+  try {
+    const idPropietario = parseInt(req.params.idArrendador);
+    
+    // Validar id del propietario
+    if (isNaN(idPropietario)) {
+      return res.status(400).json({ error: 'ID de propietario inválido' });
+    }
+    
+    // Verificar si el propietario existe
+    const propietarioExiste = await prisma.usuario.findUnique({
+      where: { idUsuario: idPropietario }
+    });
+    
+    if (!propietarioExiste) {
+      return res.status(404).json({ error: 'Propietario no encontrado' });
+    }
+    
+    const autos = await obtenerAutosPropietario(idPropietario);
+    
+    return res.status(200).json({
+      cantidad: autos.length,
+      autos: autos
+    });
+    
+  } catch (error: any) {
+    console.error('Error al obtener autos del propietario:', error);
+    
+    return res.status(500).json({ 
+      error: 'Error al procesar la solicitud',
+      detalle: error.message 
+    });
+  }
+};
+
+// Función para liberar un auto de una renta en curso
+async function liberarAutoDeRenta(idReserva: number) {
+  // Obtener la fecha actual
+  const fechaActual = new Date();
+
+  // Buscar la reserva para verificar que exista y su estado
+  const reserva = await prisma.reserva.findUnique({
+    where: { idReserva },
+    include: {
+      auto: true
+    }
+  });
+
+  // Verificar si la reserva existe
+  if (!reserva) {
+    throw new Error('Reserva no encontrada');
+  }
+
+  // Verificar que la reserva esté en estado "EN_CURSO"
+  if (reserva.estado !== 'EN_CURSO') {
+    throw new Error(`No se puede liberar una reserva con estado: ${reserva.estado}`);
+  }
+
+  // Verificar que la fecha actual sea posterior a la fecha de finalización de la reserva
+  if (fechaActual < reserva.fechaFin) {
+    throw new Error('No se puede finalizar la reserva antes de la fecha acordada');
+  }
+
+  // Actualizar la reserva a estado "FINALIZADA" en una transacción
+  return await prisma.$transaction(async (tx) => {
+    // Actualizar el estado de la reserva
+    const reservaActualizada = await tx.reserva.update({
+      where: { idReserva },
+      data: { 
+        estado: 'FINALIZADA',
+        kilometrajeFinal: reserva.auto.kilometraje // Guardar el kilometraje final del auto
+      },
+      include: {
+        auto: true,
+        cliente: {
+          select: {
+            idUsuario: true,
+            nombre: true,
+            apellido: true,
+            email: true,
+            telefono: true
+          }
+        }
+      }
+    });
+
+    // Actualizar las estadísticas del vehículo
+    // Calculamos la duración de la renta en días
+    const duracionRenta = Math.ceil(
+      (reserva.fechaFin.getTime() - reserva.fechaInicio.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    await tx.auto.update({
+      where: { idAuto: reserva.idAuto },
+      data: {
+        diasTotalRenta: {
+          increment: duracionRenta
+        },
+        vecesAlquilado: {
+          increment: 1
+        }
+      }
+    });
+    {/**
+    // Crear notificación para el propietario del auto
+    await tx.notificacion.create({
+      data: {
+        idUsuario: reserva.auto.idPropietario,
+        titulo: 'Alquiler finalizado',
+        mensaje: `La reserva del auto ${reserva.auto.marca} ${reserva.auto.modelo} ha finalizado.`,
+        idEntidad: idReserva.toString(),
+        tipoEntidad: 'RESERVA',
+        tipo: 'ALQUILER_FINALIZADO',
+        prioridad: 'MEDIA'
+      }
+    });
+
+    // Crear notificación para el cliente
+    await tx.notificacion.create({
+      data: {
+        idUsuario: reserva.idCliente,
+        titulo: 'Alquiler finalizado',
+        mensaje: `Tu alquiler del auto ${reserva.auto.marca} ${reserva.auto.modelo} ha finalizado.`,
+        idEntidad: idReserva.toString(),
+        tipoEntidad: 'RESERVA',
+        tipo: 'ALQUILER_FINALIZADO',
+        prioridad: 'MEDIA'
+      }
+    }); */}
+
+    return reservaActualizada;
+  });
+}
+
+// Controlador para manejar la solicitud de liberar un auto de una renta
+export const liberarAuto = async (req: Request, res: Response) => {
+  try {
+    const idReserva = parseInt(req.params.idReserva);
+    
+    // Validar id de la reserva
+    if (isNaN(idReserva)) {
+      return res.status(400).json({ error: 'ID de reserva inválido' });
+    }
+    
+    const reservaFinalizada = await liberarAutoDeRenta(idReserva);
+    
+    return res.status(200).json({
+      mensaje: 'Auto liberado de renta exitosamente',
+      reserva: reservaFinalizada
+    });
+    
+  } catch (error: any) {
+    console.error('Error al liberar auto de renta:', error);
+    
+    // Manejar y devolver errores específicos
+    if (error.message === 'Reserva no encontrada') {
+      return res.status(404).json({ error: 'Reserva no encontrada' });
+    }
+    
+    if (error.message.includes('No se puede liberar') || 
+        error.message.includes('No se puede finalizar')) {
+      return res.status(400).json({ error: error.message });
+    }
+    
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Registro no encontrado' });
+    }
+    
+    return res.status(500).json({ 
+      error: 'Error al procesar la solicitud',
+      detalle: error.message || error.toString()
+    });
+  }
+};
