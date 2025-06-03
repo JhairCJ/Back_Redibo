@@ -9,7 +9,7 @@ export const getDriverProfile = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const idUsuario = req.user?.idUsuario;
+  const idUsuario = req.usuario?.idUsuario;
 
   if (!idUsuario) {
     res.status(401).json({ message: "No autorizado: token inválido o ausente" });

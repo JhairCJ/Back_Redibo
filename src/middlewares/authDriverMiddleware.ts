@@ -2,7 +2,7 @@ import { Request, Response, NextFunction, RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 
 export interface AuthenticatedRequest extends Request {
-  user?: { idUsuario: number };
+  usuario?: { idUsuario: number };
 }
 
 const authDriverMiddleware: RequestHandler = (req, res, next) => {
