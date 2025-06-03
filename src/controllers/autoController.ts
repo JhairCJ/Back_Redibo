@@ -1,7 +1,7 @@
 // controllers/autoController.ts
 
 import { Request, Response } from 'express';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma} from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Función para marcar auto como Activo
@@ -100,7 +100,7 @@ async function ponerAutoEnMantenimiento(
         fechaFin: data.fechaFin ?? null, // Puede ser null para mantenimiento indefinido
         tipoMantenimiento: data.tipoMantenimiento,
         kilometraje: data.kilometraje,
-        costo: data.costo ? new Prisma.Decimal(data.costo) : null
+        costo: data.costo ? data.costo : null
       }
     });
 
