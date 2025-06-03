@@ -278,8 +278,7 @@ async function obtenerAutosPropietario(idPropietario: number) {
           cliente: {
             select: {
               idUsuario: true,
-              nombre: true,
-              apellido: true,
+              nombreCompleto: true,
               email: true,
               telefono: true
             }
@@ -494,8 +493,7 @@ async function liberarAutoDeRenta(idReserva: number) {
         cliente: {
           select: {
             idUsuario: true,
-            nombre: true,
-            apellido: true,
+            nombreCompleto: true,
             email: true,
             telefono: true
           }

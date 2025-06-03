@@ -61,7 +61,7 @@ async function detallesReservaAuto(idReserva: number) {
       tipo: auto.tipo,
       año: auto.año.toString(),
       precio: precioDiario,
-      propietario: `${propietario.nombre} ${propietario.apellido}`,
+      propietario: propietario.nombreCompleto,
       calificacion: auto.calificacionPromedio || 0,
       comentarios: auto.totalComentarios,
       descripcion: auto.descripcion || "",
@@ -180,7 +180,7 @@ async function obtenerSolicitudes(idPropietario: number) {
       const solicitudesPendientes = auto.reservas.map((reserva) => {
         return {
           idReserva: reserva.idReserva.toString(),
-          nombreSolicitante: `${reserva.cliente.nombre} ${reserva.cliente.apellido}`,
+          nombreSolicitante: reserva.cliente.nombreCompleto,
           fechas: formatearFechaRango(reserva.fechaInicio, reserva.fechaFin),
         };
       });

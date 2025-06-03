@@ -16,6 +16,7 @@ import { Request, Response } from 'express';
 //imports locales
 import { marcarActivo, marcarInactivo, ponerEnMantenimiento, finalizarMantenimiento, obtenerAutosDelPropietario, liberarAuto } from '../controllers/autoController';
 import { obtenerDetallesReservaAuto, obtenerSolicitudesDeReserva, aceptarReserva, denegarReserva } from '../controllers/reservaController';
+import { obtenerComentariosPorAuto } from '../controllers/comentarioController';
 
 const express = require('express');
 const router = express.Router();
@@ -51,6 +52,9 @@ router.put('/reservas/:idReserva/aceptar', aceptarReserva);
 router.put('/reservas/:idReserva/denegar', denegarReserva);
 // Liberar una reserva de un auto
 router.put('/reservas/:idReserva/liberar', liberarAuto);
+
+// En la parte inferior de las rutas
+router.get('/comentarios/auto/:idAuto', obtenerComentariosPorAuto);
 
 
 router.get('/test', (req: Request, res: Response) => {
