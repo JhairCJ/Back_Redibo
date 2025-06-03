@@ -1,6 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
 const { faker } = require('@faker-js/faker/locale/es_MX');
-const bcrypt = require('bcrypt');
 
 // Inicializar Prisma Client
 const prisma = new PrismaClient();
@@ -17,7 +16,7 @@ const SALT_ROUNDS = 10;
 
 // Función para generar una contraseña hasheada
 async function hashPassword(password) {
-  return await bcrypt.hash(password, SALT_ROUNDS);
+  return await password;
 }
 
 // Función principal
