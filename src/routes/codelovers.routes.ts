@@ -18,8 +18,7 @@ import { marcarActivo, marcarInactivo, ponerEnMantenimiento, finalizarMantenimie
 import { obtenerDetallesReservaAuto, obtenerSolicitudesDeReserva, aceptarReserva, denegarReserva } from '../controllers/reservaController';
 import { obtenerComentariosPorAuto } from '../controllers/comentarioController';
 
-const express = require('express');
-const router = express.Router();
+const router = Router();
 
 // ******* AUTO CONTROLLER ********
 // * GETTERS
