@@ -39,6 +39,7 @@ export const registrarDriverCompleto = async (data: {
   const telefonoFinal = usuario?.telefono ? String(usuario.telefono) : telefono;
 
   return await prisma.$transaction(async (tx) => {
+    // 1. Crear el driver
     const nuevoDriver = await tx.driver.create({
       data: {
         idUsuario,
@@ -73,7 +74,7 @@ export const registrarDriverCompleto = async (data: {
       })
     );
 
-    // 4. Crear relaciones driver-renter
+    // 4. Crear relaciones driver-renter en la tabla UsuarioDriver
     for (const renterId of rentersIds) {
       operations.push(
         tx.usuarioDriver.create({
@@ -85,21 +86,7 @@ export const registrarDriverCompleto = async (data: {
       );
     }
 
-    // 5. Asignar renters
-    for (const renterId of rentersIds) {
-      operations.push(
-        tx.usuario.update({
-          where: { idUsuario: renterId },
-          data: {
-            assignedToDriver: idUsuario
-          }
-        })
-      );
-    }
-
     await Promise.all(operations);
     return nuevoDriver;
   });
 };
- 
-
