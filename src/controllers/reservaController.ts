@@ -100,9 +100,10 @@ export const obtenerDetallesReservaAuto = async (
 
     // Verificamos que el ID sea un número válido
     if (isNaN(idReserva)) {
-      return res.status(400).json({
+      res.status(400).json({
         error: "El ID de reserva debe ser un número válido",
       });
+      return;
     }
 
     // Llamamos a nuestra función para obtener los detalles
@@ -115,12 +116,14 @@ export const obtenerDetallesReservaAuto = async (
 
     // Error de reserva no encontrada
     if (error.message === "Reserva no encontrada") {
-      return res.status(404).json({ error: "Reserva no encontrada" });
+      res.status(404).json({ error: "Reserva no encontrada" });
+      return;
     }
 
     // Error de reserva que no esta en estado aprobada
     if (error.message === "No se puede realizar el pago de la reserva") {
-      return res.status(403).json({ error: "No se puede realizar el pago de la reserva" });
+      res.status(403).json({ error: "No se puede realizar el pago de la reserva" });
+      return;
     }
 
     res.status(500).json({
@@ -226,9 +229,10 @@ export const obtenerSolicitudesDeReserva = async (req: Request, res: Response): 
     
     // Verificar que el ID sea un número válido
     if (isNaN(idPropietario)) {
-      return res.status(400).json({ 
+      res.status(400).json({ 
         error: 'El ID del propietario debe ser un número válido' 
       });
+      return;
     }
     
     // Verificar que el propietario existe
@@ -237,7 +241,8 @@ export const obtenerSolicitudesDeReserva = async (req: Request, res: Response): 
     });
     
     if (!propietario) {
-      return res.status(404).json({ error: 'Propietario no encontrado' });
+      res.status(404).json({ error: 'Propietario no encontrado' });
+      return;
     }
     
     // Obtenemos las reservas solicitadas
@@ -267,9 +272,10 @@ export const aceptarReserva = async (req: Request, res: Response): Promise<void>
 
     // Verificamos que el ID sea un número válido
     if (isNaN(idReserva)) {
-      return res.status(400).json({
+      res.status(400).json({
         error: "El ID de reserva debe ser un número válido",
       });
+      return;
     }
 
     // Buscar la reserva para verificar que existe
@@ -280,12 +286,15 @@ export const aceptarReserva = async (req: Request, res: Response): Promise<void>
     });
 
     if (!reservaExistente) {
-      return res.status(404).json({ error: "Reserva no encontrada" });
+      res.status(404).json({ error: "Reserva no encontrada" });
+      return;
     } else if (reservaExistente.estado !== "SOLICITADA") {
-      return res.status(400).json({
+      res.status(400).json({
         error: "Esta reserva ya fue procesada previamente",
       });
+      return;
     }
+
     // Actualizar el estado de la reserva a 'APROBADA'
     const reservaActualizada = await prisma.reserva.update({
       where: {
@@ -324,9 +333,10 @@ export const denegarReserva = async (req: Request, res: Response): Promise<void>
 
     // Verificamos que el ID sea un número válido
     if (isNaN(idReserva)) {
-      return res.status(400).json({
+      res.status(400).json({
         error: "El ID de reserva debe ser un número válido",
       });
+      return;
     }
 
     // Buscar la reserva para verificar que existe
@@ -337,11 +347,13 @@ export const denegarReserva = async (req: Request, res: Response): Promise<void>
     });
 
     if (!reservaExistente) {
-      return res.status(404).json({ error: "Reserva no encontrada" });
+      res.status(404).json({ error: "Reserva no encontrada" });
+      return;
     } else if (reservaExistente.estado !== "SOLICITADA") {
-      return res.status(400).json({
+      res.status(400).json({
         error: "Esta reserva ya fue procesada previamente",
       });
+      return;
     }
 
     // Actualizar el estado de la reserva a 'RECHAZADA'
