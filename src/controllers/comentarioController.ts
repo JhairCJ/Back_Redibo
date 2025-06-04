@@ -5,11 +5,11 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // En tu controlador de comentarios (comentarioController.ts)
-export const obtenerComentariosPorAuto = async (req: Request, res: Response) => {
+export const obtenerComentariosPorAuto = async (req: Request, res: Response): Promise<void> => {
   const idAuto = parseInt(req.params.idAuto);
 
   if (isNaN(idAuto)) {
-    return res.status(400).json({ error: "ID de auto no válido" });
+    res.status(400).json({ error: "ID de auto no válido" });
   }
 
   try {

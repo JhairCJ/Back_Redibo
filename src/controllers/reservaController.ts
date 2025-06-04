@@ -94,7 +94,7 @@ async function detallesReservaAuto(idReserva: number) {
 export const obtenerDetallesReservaAuto = async (
   req: Request,
   res: Response
-) => {
+): Promise<void> => {
   try {
     const idReserva = parseInt(req.params.idReserva);
 
@@ -219,7 +219,8 @@ async function obtenerSolicitudes(idPropietario: number) {
 /**
  * Controlador para manejar la solicitud HTTP y devolver las reservas solicitadas
  */
-export const obtenerSolicitudesDeReserva = async (req: Request, res: Response) => {
+
+export const obtenerSolicitudesDeReserva = async (req: Request, res: Response): Promise<void> => {
   try {
     const idPropietario = parseInt(req.params.idPropietario);
     
@@ -260,7 +261,7 @@ export const obtenerSolicitudesDeReserva = async (req: Request, res: Response) =
  * Función para aceptar una reserva cambiando su estado a 'APROBADA'
  */
 
-export const aceptarReserva = async (req: Request, res: Response) => {
+export const aceptarReserva = async (req: Request, res: Response): Promise<void> => {
   try {
     const idReserva = parseInt(req.params.idReserva);
 
@@ -317,7 +318,7 @@ export const aceptarReserva = async (req: Request, res: Response) => {
  * Función para denegar una reserva cambiando su estado a 'RECHAZADA'
  */
 
-export const denegarReserva = async (req: Request, res: Response) => {
+export const denegarReserva = async (req: Request, res: Response): Promise<void> => {
   try {
     const idReserva = parseInt(req.params.idReserva);
 

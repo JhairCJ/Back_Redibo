@@ -552,18 +552,18 @@ async function marcarAutoComoActivo(idAuto: number) {
 }
 
 // Controlador para manejar la solicitud de marcar un auto como activo
-export const marcarActivo = async (req: Request, res: Response) => {
+export const marcarActivo = async (req: Request, res: Response): Promise<void>  => {
   try {
     const idAuto = parseInt(req.params.idAuto);
     
     // Validar id del auto
     if (isNaN(idAuto)) {
-      return res.status(400).json({ error: 'ID de auto inválido' });
+      res.status(400).json({ error: 'ID de auto inválido' });
     }
     
     const autoActualizado = await marcarAutoComoActivo(idAuto);
     
-    return res.status(200).json({
+    res.status(200).json({
       mensaje: 'Auto marcado como activo exitosamente',
       auto: autoActualizado
     });
@@ -573,10 +573,10 @@ export const marcarActivo = async (req: Request, res: Response) => {
     
     // Manejar y devolver errores especificos
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Auto no encontrado' });
+      res.status(404).json({ error: 'Auto no encontrado' });
     }
     
-    return res.status(500).json({ error: 'Error al procesar la solicitud' });
+    res.status(500).json({ error: 'Error al procesar la solicitud' });
   }
 };
 
@@ -589,18 +589,18 @@ async function marcarAutoComoInactivo(idAuto: number) {
 }
 
 // Controlador para manejar la solicitud de marcar un auto como inactivo
-export const marcarInactivo = async (req: Request, res: Response) => {
+export const marcarInactivo = async (req: Request, res: Response): Promise<void> => {
   try {
     const autoId = parseInt(req.params.id);
     
     // Validar id del auto
     if (isNaN(autoId)) {
-      return res.status(400).json({ error: 'ID de auto inválido' });
+      res.status(400).json({ error: 'ID de auto inválido' });
     }
     
     const autoActualizado = await marcarAutoComoInactivo(autoId);
     
-    return res.status(200).json({
+    res.status(200).json({
       mensaje: 'Auto marcado como inactivo exitosamente',
       auto: autoActualizado
     });
@@ -610,10 +610,10 @@ export const marcarInactivo = async (req: Request, res: Response) => {
     
     // Manejar y devolver errores especificos
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Auto no encontrado' });
+      res.status(404).json({ error: 'Auto no encontrado' });
     }
     
-    return res.status(500).json({ error: 'Error al procesar la solicitud' });
+    res.status(500).json({ error: 'Error al procesar la solicitud' });
   }
 };
 
@@ -665,7 +665,7 @@ async function ponerAutoEnMantenimiento(
 }
 
 // Controlador para poner un auto en mantenimiento
-export const ponerEnMantenimiento = async (req: Request, res: Response) => {
+export const ponerEnMantenimiento = async (req: Request, res: Response): Promise<void>  => {
   try {
     const idAuto = parseInt(req.params.idAuto);
     const { 
@@ -679,15 +679,15 @@ export const ponerEnMantenimiento = async (req: Request, res: Response) => {
     
     // Validaciones
     if (isNaN(idAuto)) {
-      return res.status(400).json({ error: 'ID de auto inválido' });
+      res.status(400).json({ error: 'ID de auto inválido' });
     }
 
     if (!tipoMantenimiento || !['PREVENTIVO', 'CORRECTIVO', 'REVISION'].includes(tipoMantenimiento)) {
-      return res.status(400).json({ error: 'Tipo de mantenimiento inválido' });
+      res.status(400).json({ error: 'Tipo de mantenimiento inválido' });
     }
 
     if (!kilometraje || kilometraje <= 0) {
-      return res.status(400).json({ error: 'Kilometraje inválido' });
+      res.status(400).json({ error: 'Kilometraje inválido' });
     }
 
     // Verificar que el auto exista antes de ponerlo en mantenimiento
@@ -696,7 +696,7 @@ export const ponerEnMantenimiento = async (req: Request, res: Response) => {
     });
 
     if (!autoExistente) {
-      return res.status(404).json({ error: 'Auto no encontrado' });
+      res.status(404).json({ error: 'Auto no encontrado' });
     }
 
     // Poner el auto en mantenimiento
@@ -709,7 +709,7 @@ export const ponerEnMantenimiento = async (req: Request, res: Response) => {
       fechaFin: fechaFin ? new Date(fechaFin) : undefined
     });
     
-    return res.status(200).json({
+    res.status(200).json({
       mensaje: 'Auto puesto en mantenimiento exitosamente',
       mantenimiento: mantenimiento
     });
@@ -717,7 +717,7 @@ export const ponerEnMantenimiento = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error al poner auto en mantenimiento:', error);
 
-    return res.status(500).json({
+    res.status(500).json({
       error: 'Error al procesar la solicitud de mantenimiento',
       detalle: error.message || error.toString()
     });
@@ -725,13 +725,13 @@ export const ponerEnMantenimiento = async (req: Request, res: Response) => {
 };
 
 // Controlador para finalizar mantenimiento de un auto
-export const finalizarMantenimiento = async (req: Request, res: Response) => {
+export const finalizarMantenimiento = async (req: Request, res: Response): Promise<void> => {
   try {
     const idHistorial = parseInt(req.params.idHistorial);
     
     // Validar id del historial de mantenimiento
     if (isNaN(idHistorial)) {
-      return res.status(400).json({ error: 'ID de historial de mantenimiento inválido' });
+      res.status(400).json({ error: 'ID de historial de mantenimiento inválido' });
     }
 
     // Transacción para finalizar mantenimiento
@@ -773,7 +773,7 @@ export const finalizarMantenimiento = async (req: Request, res: Response) => {
       return { mantenimiento, autoActualizado };
     });
     
-    return res.status(200).json({
+    res.status(200).json({
       mensaje: 'Mantenimiento finalizado exitosamente',
       ...resultado
     });
@@ -783,10 +783,10 @@ export const finalizarMantenimiento = async (req: Request, res: Response) => {
     
     // Manejar errores específicos de Prisma
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Registro de mantenimiento no encontrado' });
+      res.status(404).json({ error: 'Registro de mantenimiento no encontrado' });
     }
     
-    return res.status(500).json({ error: 'Error al procesar la solicitud de finalización de mantenimiento' });
+    res.status(500).json({ error: 'Error al procesar la solicitud de finalización de mantenimiento' });
   }
 };
 
@@ -955,13 +955,14 @@ async function obtenerAutosPropietario(idPropietario: number) {
 }
 
 // Controlador para manejar la solicitud de obtener autos de un propietario
-export const obtenerAutosDelPropietario = async (req: Request, res: Response) => {
+export const obtenerAutosDelPropietario = async (req: Request, res: Response): Promise<void> => {
   try {
     const idPropietario = parseInt(req.params.idArrendador);
     
     // Validar id del propietario
     if (isNaN(idPropietario)) {
-      return res.status(400).json({ error: 'ID de propietario inválido' });
+      res.status(400).json({ error: 'ID de propietario inválido' });
+      return; // IMPORTANTE: return sin valor para terminar la ejecución
     }
     
     // Verificar si el propietario existe
@@ -970,23 +971,26 @@ export const obtenerAutosDelPropietario = async (req: Request, res: Response) =>
     });
     
     if (!propietarioExiste) {
-      return res.status(404).json({ error: 'Propietario no encontrado' });
+      res.status(404).json({ error: 'Propietario no encontrado' });
+      return; // IMPORTANTE: return sin valor para terminar la ejecución
     }
     
     const autos = await obtenerAutosPropietario(idPropietario);
     
-    return res.status(200).json({
+    res.status(200).json({
       cantidad: autos.length,
       autos: autos
     });
+    // IMPORTANTE: No necesitas return aquí, la función termina naturalmente
     
   } catch (error: any) {
     console.error('Error al obtener autos del propietario:', error);
     
-    return res.status(500).json({ 
+    res.status(500).json({ 
       error: 'Error al procesar la solicitud',
       detalle: error.message 
     });
+    // IMPORTANTE: No necesitas return aquí tampoco
   }
 };
 
@@ -1089,18 +1093,18 @@ async function liberarAutoDeRenta(idReserva: number) {
 }
 
 // Controlador para manejar la solicitud de liberar un auto de una renta
-export const liberarAuto = async (req: Request, res: Response) => {
+export const liberarAuto = async (req: Request, res: Response): Promise<void> => {
   try {
     const idReserva = parseInt(req.params.idReserva);
     
     // Validar id de la reserva
     if (isNaN(idReserva)) {
-      return res.status(400).json({ error: 'ID de reserva inválido' });
+      res.status(400).json({ error: 'ID de reserva inválido' });
     }
     
     const reservaFinalizada = await liberarAutoDeRenta(idReserva);
     
-    return res.status(200).json({
+    res.status(200).json({
       mensaje: 'Auto liberado de renta exitosamente',
       reserva: reservaFinalizada
     });
@@ -1110,19 +1114,19 @@ export const liberarAuto = async (req: Request, res: Response) => {
     
     // Manejar y devolver errores específicos
     if (error.message === 'Reserva no encontrada') {
-      return res.status(404).json({ error: 'Reserva no encontrada' });
+      res.status(404).json({ error: 'Reserva no encontrada' });
     }
     
     if (error.message.includes('No se puede liberar') || 
         error.message.includes('No se puede finalizar')) {
-      return res.status(400).json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
     
     if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'Registro no encontrado' });
+      res.status(404).json({ error: 'Registro no encontrado' });
     }
     
-    return res.status(500).json({ 
+    res.status(500).json({ 
       error: 'Error al procesar la solicitud',
       detalle: error.message || error.toString()
     });
