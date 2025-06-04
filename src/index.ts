@@ -7,13 +7,14 @@ import passwordRoutes from '../src/routes/password.routes';
 import authRoutes from '../src/routes/auth.routes';
 import session from "express-session";
 import passport from "passport";
+
+import codeloversRoutes from "./routes/codelovers.routes";
 import authRegistroHostRoutes from '../src/routes/registroHost.routes';
 import authRegistroDriverRoutes from '../src/routes/registroDriver.routes'; // Import the driver routes
 import "../src/config/googleAuth"; // <--- importante
 import usuarioRoutes from '../src/routes/usuario.routes';
 import visualizarDriverRoutes from "../src/routes/visualizarDriver.routes";
 import autoRoutes from "../src/routes/auto.routes";
-import codeloversRoutes from "../src/routes/codelovers.routes";
 
 import path from 'path';
 // Cargar variables de entorno
