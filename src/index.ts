@@ -8,7 +8,6 @@ import authRoutes from '../src/routes/auth.routes';
 import session from "express-session";
 import passport from "passport";
 
-import codeloversRoutes from "./routes/codelovers.routes";
 import authRegistroHostRoutes from '../src/routes/registroHost.routes';
 import authRegistroDriverRoutes from '../src/routes/registroDriver.routes'; // Import the driver routes
 import "../src/config/googleAuth"; // <--- importante
@@ -64,7 +63,6 @@ app.use('/api', authRegistroDriverRoutes); // Añadir la ruta de registro de dri
 app.use('/api', usuarioRoutes); // Añadir la ruta de usuario aquí
 app.use('/api', visualizarDriverRoutes);// Añadir la ruta de visualizar driver aquí
 app.use('/api', autoRoutes);
-app.use('/api', codeloversRoutes);
 
 app.get('/', (req, res) => {
   res.send('Bienvenido al back de REDIBO');
